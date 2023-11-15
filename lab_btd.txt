@@ -1,0 +1,242 @@
+[s2021103049@centos8-linux Wed Nov 15 09:58 AM w4]$ cat s1.c
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<arpa/inet.h>
+
+int main()
+{
+
+     char *ip="127.0.0.1";
+     int port=1200;
+
+     int server_sock,client_sock;
+     struct sockaddr_in server_addr,client_addr;
+     socklen_t addr_size;
+     char buffer[35024];
+     int n;
+
+     server_sock=socket(AF_INET,SOCK_STREAM,0);
+
+     if(server_sock < 0)
+     {
+              perror("socket error\n");
+              exit(1);
+     }
+     printf("socket created\n");
+     memset(&server_addr,'\0',sizeof(server_addr));
+     server_addr.sin_family=AF_INET;
+     server_addr.sin_port=port;
+     server_addr.sin_addr.s_addr=inet_addr(ip);
+
+     n=bind(server_sock,(struct sockaddr*) &server_addr,sizeof(server_addr));
+
+        if(n<0)
+        {
+          perror("bind error\n");
+           exit(1);
+        }
+
+      listen(server_sock,1);
+      printf("listening on %d port\n",port);
+
+            addr_size=sizeof(client_addr);
+            client_sock=accept(server_sock,(struct sockaddr*)&client_addr,&addr_size);
+            printf("connected to client\n");
+
+            int num;
+            printf("enter number:");
+            scanf("%d",&num);
+
+            int n2=num,c=0;
+            while(n2)
+            {
+                    n2/=10;
+                    c++;
+            }
+            n2=num;
+            int a;
+            bzero(buffer,35024);
+            for( a=c-1; a>=0; a--)
+            {
+                    buffer[a]=(char) (n2%10+'0');
+                    n2/=10;
+            }
+
+            //printf("%s is buffer\n",buffer);
+
+            send(client_sock,buffer,sizeof(buffer),0);
+            bzero(buffer,35024);
+            recv(client_sock,buffer,sizeof(buffer),0);
+            printf(" B sent : %s\n",buffer);
+
+           listen(server_sock,1);
+           printf("listening on %d port\n",port);
+
+            addr_size=sizeof(client_addr);
+            client_sock=accept(server_sock,(struct sockaddr*)&client_addr,&addr_size);
+            printf("connected to client\n");
+
+            send(client_sock,buffer,sizeof(buffer),0);
+
+            bzero(buffer,35024);
+            recv(client_sock,buffer,sizeof(buffer),0);
+
+            printf("C SENT : %s\n",buffer);
+
+           return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+[s2021103049@centos8-linux Wed Nov 15 09:58 AM w4]$ cat b.c
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<arpa/inet.h>
+void dtb(int n,char buf[])
+{
+    char bin[90];
+    int i=0,j=0,num=n,c=0;
+    i=0;
+    while(num!=0)
+    {
+       bin[i++]=(char)(num%2+'0');
+       num/=2;
+    }
+    int y=0;
+    for(j=i-1; j>=0; j--){
+
+         buf[j]=bin[y++];
+    }
+}
+
+
+int main()
+{
+
+     char *ip="127.0.0.1";
+     int port=1200;
+
+     int sock;
+     struct sockaddr_in addr;
+     socklen_t addr_size;
+     char buffer[35024];
+     int n;
+
+     sock=socket(AF_INET,SOCK_STREAM,0);
+
+     if(sock < 0)
+     {
+              perror("socket error\n");
+              exit(1);
+     }
+  printf("socket created\n");
+     memset(&addr,'\0',sizeof(addr));
+     addr.sin_family=AF_INET;
+     addr.sin_port=port;
+     addr.sin_addr.s_addr=inet_addr(ip);
+
+
+             addr_size=sizeof(addr);
+            connect(sock,(struct sockaddr*) &addr,sizeof(addr));
+
+             bzero(buffer,35024);
+            recv(sock,buffer,sizeof(buffer),0);
+
+           int num=atoi(buffer);
+           printf("num is %d\n",num);
+           char buf[90];
+           bzero(buf,90);
+           dtb(num,buf);
+
+           bzero(buffer,35024);
+           strcpy(buffer,buf);
+           printf("binary : %s\n",buffer);
+           send(sock,buffer,sizeof(buffer),0);
+
+           return 0;
+}
+[s2021103049@centos8-linux Wed Nov 15 09:58 AM w4]$ cat c.c
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<arpa/inet.h>
+
+
+int cone(char buff[])
+{
+
+        int c=0;
+        for(int i=0; i<strlen(buff); i++)
+        {
+                if(buff[i]=='1')
+                        c++;
+        }
+        return c;
+}
+int main()
+{
+
+     char *ip="127.0.0.1";
+     int port=1200;
+
+     int sock;
+     struct sockaddr_in addr;
+     socklen_t addr_size;
+     char buffer[35024];
+     int n;
+
+     sock=socket(AF_INET,SOCK_STREAM,0);
+
+     if(sock < 0)
+     {
+              perror("socket error\n");
+              exit(1);
+     }
+     printf("socket created\n");
+     memset(&addr,'\0',sizeof(addr));
+     addr.sin_family=AF_INET;
+     addr.sin_port=port;
+     addr.sin_addr.s_addr=inet_addr(ip);
+
+
+             addr_size=sizeof(addr);
+            connect(sock,(struct sockaddr*) &addr,sizeof(addr));
+
+             bzero(buffer,35024);
+            recv(sock,buffer,sizeof(buffer),0);
+          printf("binary recvd : %s\n",buffer);
+
+
+
+          int  num=cone(buffer),a=0,c=0,n2=num;
+
+           bzero(buffer,35024);
+           while(n2)
+           {
+               n2/=10;
+               c++;
+           }
+           for(a=c-1; a>=0; a--)
+           {
+                  buffer[a]=(char) (num%10 +'0');
+                  num/=10;
+           }
+           printf("binary : %s\n",buffer);
+           send(sock,buffer,sizeof(buffer),0);
+
+           return 0;
+}
